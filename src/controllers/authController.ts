@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
+import { AuthRequest } from "../middlewares/authMiddleware";
 
 export async function register(req: Request, res: Response): Promise<Response> {
   try {
@@ -88,4 +89,140 @@ export async function protectedRoute(
   res: Response
 ): Promise<Response> {
   return res.json({ message: "Acesso autorizado" });
+}
+
+export async function getProfile(
+  req: AuthRequest,
+  res: Response
+): Promise<Response> {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    return res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email
+    });
+  } catch (error) {
+    console.error("Erro no getProfile:", error);
+    return res.status(500).json({ message: "Erro interno no servidor" });
+  }
+}
+
+export async function updateProfile(
+  req: AuthRequest,
+  res: Response
+): Promise<Response> {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const { name, email } = req.body as {
+      name?: string;
+      email?: string;
+    };
+
+    if (!name && !email) {
+      return res
+        .status(400)
+        .json({ message: "Pelo menos um campo (name ou email) deve ser enviado" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    // Validar formato de email se fornecido
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Formato de email inválido" });
+      }
+
+      // Verificar se o email já está em uso por outro usuário
+      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        return res.status(409).json({ message: "Email já está em uso" });
+      }
+    }
+
+    // Atualizar apenas os campos fornecidos
+    if (name) user.name = name;
+    if (email) user.email = email;
+
+    await user.save();
+
+    return res.json({
+      message: "Perfil atualizado com sucesso",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error("Erro no updateProfile:", error);
+    return res.status(500).json({ message: "Erro interno no servidor" });
+  }
+}
+
+export async function changePassword(
+  req: AuthRequest,
+  res: Response
+): Promise<Response> {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword?: string;
+      newPassword?: string;
+    };
+
+    if (!currentPassword || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "Senha atual e nova senha são obrigatórias" });
+    }
+
+    if (newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "A nova senha deve ter no mínimo 6 caracteres" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    // Validar senha atual
+    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validPassword) {
+      return res.status(400).json({ message: "Senha atual incorreta" });
+    }
+
+    // Hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.json({ message: "Senha alterada com sucesso" });
+  } catch (error) {
+    console.error("Erro no changePassword:", error);
+    return res.status(500).json({ message: "Erro interno no servidor" });
+  }
 }
