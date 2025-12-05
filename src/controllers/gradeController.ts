@@ -94,8 +94,10 @@ export async function createSemester(
       approved
     });
 
-    // Invalida o cache de semestres do usuário
+    // Invalida o cache de semestres, stats e summary do usuário
     await deleteCachePattern(`semesters:${userId}*`);
+    await deleteCachePattern(`stats:${userId}*`);
+    await deleteCachePattern(`summary:${userId}*`);
 
     return res.status(201).json(semester);
   } catch (error) {
@@ -158,8 +160,10 @@ export async function updateSemester(
 
     await semester.save();
 
-    // Invalida o cache de semestres do usuário
+    // Invalida o cache de semestres, stats e summary do usuário
     await deleteCachePattern(`semesters:${userId}*`);
+    await deleteCachePattern(`stats:${userId}*`);
+    await deleteCachePattern(`summary:${userId}*`);
 
     return res.json(semester);
   } catch (error) {
@@ -188,12 +192,160 @@ export async function deleteSemester(
       return res.status(404).json({ message: "Semestre não encontrado" });
     }
 
-    // Invalida o cache de semestres do usuário
+    // Invalida o cache de semestres, stats e summary do usuário
     await deleteCachePattern(`semesters:${userId}*`);
+    await deleteCachePattern(`stats:${userId}*`);
+    await deleteCachePattern(`summary:${userId}*`);
 
     return res.json({ message: "Semestre removido com sucesso" });
   } catch (error) {
     console.error("Erro ao remover semestre:", error);
     return res.status(500).json({ message: "Erro ao remover semestre" });
+  }
+}
+
+export async function getStats(
+  req: AuthRequest,
+  res: Response
+): Promise<Response> {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const cacheKey = getCacheKey("stats", userId);
+
+    // Tenta buscar do cache primeiro
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Busca todos os semestres do usuário
+    const semesters = await SemesterGrade.find({ user: userId });
+
+    // Coleta todas as disciplinas de todos os semestres
+    const allDisciplines = semesters.flatMap((semester) => semester.disciplines);
+
+    // Calcula estatísticas
+    const totalDisciplines = allDisciplines.length;
+
+    // Disciplinas com média calculada (para média geral)
+    const disciplinesWithAverage = allDisciplines.filter(
+      (d) => d.average !== null && d.average !== undefined
+    );
+
+    // Calcula média geral ponderada por carga horária
+    let overallAverage: number | null = null;
+    if (disciplinesWithAverage.length > 0) {
+      const totalWorkload = disciplinesWithAverage.reduce(
+        (sum, d) => sum + d.workload,
+        0
+      );
+      const weightedSum = disciplinesWithAverage.reduce(
+        (sum, d) => sum + (d.average as number) * d.workload,
+        0
+      );
+      overallAverage =
+        totalWorkload > 0
+          ? Number((weightedSum / totalWorkload).toFixed(2))
+          : null;
+    }
+
+    // Conta disciplinas por status
+    const approvedCount = allDisciplines.filter(
+      (d) => d.status === "APROVADO"
+    ).length;
+    const failedCount = allDisciplines.filter(
+      (d) => d.status === "REPROVADO_NOTA" || d.status === "REPROVADO_FALTA"
+    ).length;
+    const inProgressCount = allDisciplines.filter(
+      (d) => d.status === "EM_ANDAMENTO" || d.status === "EM_RISCO"
+    ).length;
+
+    // Calcula taxa de aprovação (apenas disciplinas finalizadas)
+    const finalizedCount = approvedCount + failedCount;
+    const approvalRate =
+      finalizedCount > 0
+        ? Number((approvedCount / finalizedCount).toFixed(2))
+        : 0;
+
+    const stats = {
+      overallAverage,
+      totalDisciplines,
+      approvalRate,
+      totalApproved: approvedCount,
+      totalFailed: failedCount,
+      totalInProgress: inProgressCount
+    };
+
+    // Salva no cache
+    await setCache(cacheKey, stats);
+
+    return res.json(stats);
+  } catch (error) {
+    console.error("Erro ao buscar estatísticas:", error);
+    return res.status(500).json({ message: "Erro ao buscar estatísticas" });
+  }
+}
+
+export async function getSummary(
+  req: AuthRequest,
+  res: Response
+): Promise<Response> {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const cacheKey = getCacheKey("summary", userId);
+
+    // Tenta buscar do cache primeiro
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Busca todos os semestres do usuário ordenados por ano e termo
+    const semesters = await SemesterGrade.find({ user: userId }).sort({
+      year: -1,
+      term: -1
+    });
+
+    // Cria resumo por semestre
+    const summary = semesters.map((semester) => {
+      const disciplines = semester.disciplines;
+      const approvedCount = disciplines.filter(
+        (d) => d.status === "APROVADO"
+      ).length;
+      const failedCount = disciplines.filter(
+        (d) => d.status === "REPROVADO_NOTA" || d.status === "REPROVADO_FALTA"
+      ).length;
+      const inProgressCount = disciplines.filter(
+        (d) => d.status === "EM_ANDAMENTO" || d.status === "EM_RISCO"
+      ).length;
+
+      return {
+        year: semester.year,
+        term: semester.term,
+        semesterAverage: semester.average,
+        totalDisciplines: disciplines.length,
+        approvedCount,
+        failedCount,
+        inProgressCount
+      };
+    });
+
+    const result = { summary };
+
+    // Salva no cache
+    await setCache(cacheKey, result);
+
+    return res.json(result);
+  } catch (error) {
+    console.error("Erro ao buscar resumo:", error);
+    return res.status(500).json({ message: "Erro ao buscar resumo" });
   }
 }

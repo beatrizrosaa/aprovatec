@@ -6,6 +6,8 @@ const authMiddleware_1 = require("../middlewares/authMiddleware");
 const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authMiddleware);
 router.get("/", gradeController_1.listSemesters);
+router.get("/stats", gradeController_1.getStats);
+router.get("/summary", gradeController_1.getSummary);
 router.post("/", gradeController_1.createSemester);
 router.put("/:id", gradeController_1.updateSemester);
 router.delete("/:id", gradeController_1.deleteSemester);
