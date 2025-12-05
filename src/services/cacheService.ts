@@ -46,7 +46,10 @@ export async function deleteCachePattern(pattern: string): Promise<void> {
   try {
     const keys = await client.keys(pattern);
     if (keys.length > 0) {
-      await client.del(keys);
+      // Usa del com múltiplos argumentos usando apply ou itera sobre as keys
+      for (const key of keys) {
+        await client.del(key);
+      }
     }
   } catch (error) {
     console.error("Erro ao deletar cache por padrão:", error);
