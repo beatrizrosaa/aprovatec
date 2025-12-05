@@ -42,7 +42,7 @@ export function evaluateDiscipline(discipline: IDiscipline): DisciplineEvaluatio
     }
   });
 
-  const limitAbsences = Number((discipline.workload * 0.25).toFixed(2));
+  const limitAbsences = Number((discipline.workload * 0.25 *1,2).toFixed(2));
   const missingWeight = 1 - filledWeight;
   const hasAllGrades = missingWeight <= 0;
   const average = hasAllGrades ? Number(weightedSum.toFixed(2)) : null;
