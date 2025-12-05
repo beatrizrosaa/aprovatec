@@ -3,6 +3,11 @@ import { createClient } from "redis";
 let redisClient: ReturnType<typeof createClient> | null = null;
 
 export async function connectRedis(): Promise<void> {
+  // Se já existe um cliente conectado, retornar
+  if (redisClient && redisClient.isOpen) {
+    return;
+  }
+
   const redisUrl = process.env.REDIS_URL;
 
   if (!redisUrl) {
@@ -11,6 +16,13 @@ export async function connectRedis(): Promise<void> {
   }
 
   try {
+    // Se já existe um cliente mas não está conectado, tentar reconectar
+    if (redisClient && !redisClient.isOpen) {
+      await redisClient.connect();
+      return;
+    }
+
+    // Criar novo cliente
     redisClient = createClient({
       url: redisUrl
     });
