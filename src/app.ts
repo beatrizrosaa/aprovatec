@@ -8,67 +8,63 @@ import gradeRoutes from "./routes/gradeRoutes";
 
 const app = express();
 
-// Configuração do CORS
+// Configuração do CORS - Permissiva para Vercel deployments
+// Em produção no Vercel, permitir todas as origens do Vercel
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // Se não há origin (ex: requisições do Postman, curl, etc), permitir
+    // Se não há origin, permitir (requisições server-to-server)
     if (!origin) {
       return callback(null, true);
     }
 
-    // Lista de origens permitidas
-    const allowedOrigins: (string | RegExp)[] = [];
-    
-    // Adicionar FRONTEND_URL se estiver definido
-    if (process.env.FRONTEND_URL) {
-      allowedOrigins.push(process.env.FRONTEND_URL);
+    // Permitir todas as URLs do Vercel (produção e preview deployments)
+    if (origin.includes("vercel.app")) {
+      return callback(null, true);
     }
-    
-    // Adicionar VERCEL_URL se estiver definido
-    if (process.env.VERCEL_URL) {
-      allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
-    }
-    
-    // Permitir todas as URLs do Vercel (incluindo preview deployments)
-    allowedOrigins.push(/^https:\/\/.*\.vercel\.app$/);
-    
+
     // Permitir localhost em desenvolvimento
-    allowedOrigins.push(/^http:\/\/localhost:\d+$/);
-
-    // Verificar se a origin está na lista de permitidas
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (typeof allowedOrigin === "string") {
-        return origin === allowedOrigin;
-      }
-      return allowedOrigin.test(origin);
-    });
-
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      // Em desenvolvimento, permitir todas as origens
-      if (process.env.NODE_ENV !== "production") {
-        callback(null, true);
-      } else {
-        // Em produção, ainda permitir se for Vercel (pode ser um preview deployment)
-        // ou se não houver restrições específicas
-        if (origin.includes("vercel.app")) {
-          callback(null, true);
-        } else {
-          console.warn(`CORS bloqueado para origin: ${origin}`);
-          callback(new Error("Não permitido pelo CORS"));
-        }
-      }
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      return callback(null, true);
     }
+
+    // Verificar FRONTEND_URL se estiver definido
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+
+    // Em desenvolvimento, permitir todas as origens
+    if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+      return callback(null, true);
+    }
+
+    // Em produção no Vercel, se não for Vercel.app, ainda permitir
+    // (pode ser necessário para integrações)
+    console.log(`CORS permitindo origin: ${origin}`);
+    callback(null, true);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   exposedHeaders: ["Content-Type", "Authorization"],
-  optionsSuccessStatus: 200, // Para navegadores legados
+  optionsSuccessStatus: 200,
+  preflightContinue: false,
 };
 
+// Aplicar CORS antes de qualquer outro middleware
 app.use(cors(corsOptions));
+
+// Handler explícito para OPTIONS (preflight) como fallback adicional
+app.options("*", (req, res) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+  }
+  res.status(200).end();
+});
+
 app.use(express.json());
 
 app.get("/", (_req, res) => {
