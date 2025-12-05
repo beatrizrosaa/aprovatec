@@ -8,8 +8,12 @@ import {
   changePassword
 } from "../controllers/authController";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { ensureDatabaseConnection } from "../middlewares/dbMiddleware";
 
 const router = Router();
+
+// Aplicar middleware de conexão do banco em todas as rotas
+router.use(ensureDatabaseConnection);
 
 router.post("/register", register);
 router.post("/login", login);

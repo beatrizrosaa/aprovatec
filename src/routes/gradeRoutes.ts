@@ -8,9 +8,12 @@ import {
   updateSemester
 } from "../controllers/gradeController";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { ensureDatabaseConnection } from "../middlewares/dbMiddleware";
 
 const router = Router();
 
+// Aplicar middleware de conexão do banco antes do authMiddleware
+router.use(ensureDatabaseConnection);
 router.use(authMiddleware);
 
 router.get("/", listSemesters);
