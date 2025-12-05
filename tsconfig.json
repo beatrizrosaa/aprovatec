@@ -3,11 +3,16 @@
     "target": "ES2020",
     "module": "CommonJS",
     "outDir": "dist",
+    "rootDir": ".",
     "esModuleInterop": true,
     "strict": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": false,
+    "sourceMap": false
   },
-  "include": ["src", "api"]
+  "include": ["src/**/*", "api/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

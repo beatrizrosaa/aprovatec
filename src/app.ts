@@ -87,8 +87,9 @@ async function initializeConnections() {
 // Inicializar conexões quando o módulo for carregado
 initializeConnections();
 
-// Para desenvolvimento local
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+// Para desenvolvimento local (não executar no Vercel)
+// Verificar se está rodando como script principal e não no Vercel
+if (!process.env.VERCEL && process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
   
   async function startServer() {

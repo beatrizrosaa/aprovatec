@@ -6,12 +6,22 @@ exports.disconnectRedis = disconnectRedis;
 const redis_1 = require("redis");
 let redisClient = null;
 async function connectRedis() {
+    // Se já existe um cliente conectado, retornar
+    if (redisClient && redisClient.isOpen) {
+        return;
+    }
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
         console.warn("REDIS_URL não definido no .env - cache desabilitado");
         return;
     }
     try {
+        // Se já existe um cliente mas não está conectado, tentar reconectar
+        if (redisClient && !redisClient.isOpen) {
+            await redisClient.connect();
+            return;
+        }
+        // Criar novo cliente
         redisClient = (0, redis_1.createClient)({
             url: redisUrl
         });

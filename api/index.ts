@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import app from "../src/app";
 import { connectDatabase } from "../src/database";
 import { connectRedis } from "../src/database/redis";
@@ -18,12 +17,10 @@ async function initialize() {
   }
 }
 
-// Handler serverless para o Vercel
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Inicializar conexões se ainda não foram inicializadas
-  await initialize();
-  
-  // Processar a requisição com o app Express
-  return app(req, res);
-}
+// Inicializar conexões quando o módulo for carregado
+initialize();
+
+// Exportar o app Express para o Vercel
+// O @vercel/node converterá automaticamente para uma função serverless
+export default app;
 
