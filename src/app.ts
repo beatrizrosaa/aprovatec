@@ -8,13 +8,32 @@ import gradeRoutes from "./routes/gradeRoutes";
 
 const app = express();
 
-// CORS - Permitir todas as origens (sem restrições)
+// CORS - Permitir TODAS as origens sem restrições
 app.use(cors({
-  origin: true, // Permite todas as origens
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  origin: "*", // Permite todas as origens sem restrições
+  credentials: false, // Desabilitado quando origin é "*"
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+  allowedHeaders: "*", // Permite todos os headers
+  exposedHeaders: "*",
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Middleware adicional para garantir CORS em todas as requisições
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
+  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Expose-Headers", "*");
+  res.header("Access-Control-Max-Age", "86400");
+  
+  // Responder imediatamente a requisições OPTIONS
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  
+  next();
+});
 
 app.use(express.json());
 
