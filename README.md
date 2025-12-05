@@ -22,20 +22,22 @@ npm install
 
 ## Configuração
 
-1. Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis de ambiente:
-
-```env
-MONGO_URI=mongodb://localhost:27017/aprovatec
-JWT_SECRET=seu_secret_jwt_aqui
-PORT=3000
-REDIS_URL=redis://localhost:6379
+1. Copie o arquivo `.env.example` para `.env`:
+```bash
+cp .env.example .env
 ```
 
-**Nota:** 
-- `MONGO_URI`: URL de conexão com o MongoDB (obrigatório)
-- `JWT_SECRET`: Chave secreta para assinatura dos tokens JWT (obrigatório)
-- `PORT`: Porta em que o servidor irá rodar (opcional, padrão: 3000)
-- `REDIS_URL`: URL de conexão com o Redis (opcional, se não fornecido o cache será desabilitado)
+2. Edite o arquivo `.env` e configure as variáveis de ambiente necessárias:
+
+**Variáveis obrigatórias:**
+- `MONGO_URI`: URL de conexão com o MongoDB
+- `JWT_SECRET`: Chave secreta para assinatura dos tokens JWT (use uma string aleatória e segura)
+
+**Variáveis opcionais:**
+- `PORT`: Porta em que o servidor irá rodar (padrão: 3000)
+- `REDIS_URL`: URL de conexão com o Redis (se não fornecido, o cache será desabilitado)
+
+**Nota:** O arquivo `.env.example` contém exemplos e comentários explicativos para cada variável.
 
 ## Como Executar
 

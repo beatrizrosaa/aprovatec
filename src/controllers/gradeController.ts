@@ -10,6 +10,9 @@ export async function listSemesters(
 ): Promise<Response> {
   try {
     const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
     const cacheKey = getCacheKey("semesters", userId);
 
     // Tenta buscar do cache primeiro
@@ -40,6 +43,9 @@ export async function createSemester(
 ): Promise<Response> {
   try {
     const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
     const { year, term, disciplines } = req.body as {
       year?: number;
       term?: number;
@@ -104,6 +110,9 @@ export async function updateSemester(
 ): Promise<Response> {
   try {
     const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
     const { id } = req.params;
     const { year, term, disciplines } = req.body as {
       year?: number;
@@ -165,6 +174,9 @@ export async function deleteSemester(
 ): Promise<Response> {
   try {
     const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
     const { id } = req.params;
 
     const semester = await SemesterGrade.findOneAndDelete({
