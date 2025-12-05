@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import app from "../src/server";
+import app from "../src/app";
 import { connectDatabase } from "../src/database";
 import { connectRedis } from "../src/database/redis";
 

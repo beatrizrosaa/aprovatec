@@ -4,14 +4,10 @@
   "description": "Backend do sistema AprovaTec em TypeScript",
   "main": "dist/app.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "build": "tsc",
-<<<<<<< HEAD
-    "start": "node dist/app.js"
-=======
-    "start": "node dist/server.js",
+    "start": "node dist/app.js",
     "vercel-build": "tsc"
->>>>>>> 534c492 (suporte para o vercel)
   },
   "keywords": [],
   "author": "",

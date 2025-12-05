@@ -84,8 +84,6 @@ async function initializeConnections() {
   }
 }
 
-<<<<<<< HEAD:src/app.ts
-=======
 // Inicializar conexões quando o módulo for carregado
 initializeConnections();
 
@@ -105,5 +103,4 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
 }
 
 // Exportar o app para uso no Vercel (serverless)
->>>>>>> 534c492 (suporte para o vercel):src/server.ts
 export default app;
