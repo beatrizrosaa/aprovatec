@@ -11,20 +11,29 @@ const app = express();
 // Configuração do CORS
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // Lista de origens permitidas
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
-      // Permitir requisições do mesmo domínio (para desenvolvimento local)
-      /^https:\/\/.*\.vercel\.app$/,
-      // Permitir localhost em desenvolvimento
-      /^http:\/\/localhost:\d+$/,
-    ].filter(Boolean) as (string | RegExp)[];
-
     // Se não há origin (ex: requisições do Postman, curl, etc), permitir
     if (!origin) {
       return callback(null, true);
     }
+
+    // Lista de origens permitidas
+    const allowedOrigins: (string | RegExp)[] = [];
+    
+    // Adicionar FRONTEND_URL se estiver definido
+    if (process.env.FRONTEND_URL) {
+      allowedOrigins.push(process.env.FRONTEND_URL);
+    }
+    
+    // Adicionar VERCEL_URL se estiver definido
+    if (process.env.VERCEL_URL) {
+      allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+    }
+    
+    // Permitir todas as URLs do Vercel (incluindo preview deployments)
+    allowedOrigins.push(/^https:\/\/.*\.vercel\.app$/);
+    
+    // Permitir localhost em desenvolvimento
+    allowedOrigins.push(/^http:\/\/localhost:\d+$/);
 
     // Verificar se a origin está na lista de permitidas
     const isAllowed = allowedOrigins.some(allowedOrigin => {
@@ -41,13 +50,22 @@ const corsOptions = {
       if (process.env.NODE_ENV !== "production") {
         callback(null, true);
       } else {
-        callback(new Error("Não permitido pelo CORS"));
+        // Em produção, ainda permitir se for Vercel (pode ser um preview deployment)
+        // ou se não houver restrições específicas
+        if (origin.includes("vercel.app")) {
+          callback(null, true);
+        } else {
+          console.warn(`CORS bloqueado para origin: ${origin}`);
+          callback(new Error("Não permitido pelo CORS"));
+        }
       }
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 200, // Para navegadores legados
 };
 
 app.use(cors(corsOptions));
