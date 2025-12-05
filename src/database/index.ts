@@ -7,12 +7,12 @@ let connectionPromise: Promise<typeof mongoose> | null = null;
 
 export async function connectDatabase(): Promise<void> {
   // Se já estiver conectado, retornar
-  if (mongoose.connection.readyState === 1) {
+  if (mongoose.connection.readyState === mongoose.ConnectionStates.connected) {
     return;
   }
 
   // Se já existe uma conexão em cache e está conectada, usar ela
-  if (cachedConnection && mongoose.connection.readyState === 1) {
+  if (cachedConnection && mongoose.connection.readyState === mongoose.ConnectionStates.connected) {
     return;
   }
 

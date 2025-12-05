@@ -13,7 +13,7 @@ export async function ensureDatabaseConnection(
 ): Promise<void> {
   try {
     // Verificar se já está conectado
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === mongoose.ConnectionStates.connected) {
       return next();
     }
 
