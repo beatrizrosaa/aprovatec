@@ -11,11 +11,6 @@ export async function connectDatabase(): Promise<void> {
     return;
   }
 
-  // Se já existe uma conexão em cache e está conectada, usar ela
-  if (cachedConnection && mongoose.connection.readyState === mongoose.ConnectionStates.connected) {
-    return;
-  }
-
   // Se já existe uma promise de conexão em andamento, aguardar ela
   if (connectionPromise) {
     try {
