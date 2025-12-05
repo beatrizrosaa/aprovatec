@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../middlewares/authMiddleware";
 import { SemesterGrade } from "../models/SemesterGrade";
 import { evaluateSemester } from "../services/gradeService";
+import { getCache, setCache, deleteCachePattern, getCacheKey } from "../services/cacheService";
 
 export async function listSemesters(
   req: AuthRequest,
@@ -9,10 +10,23 @@ export async function listSemesters(
 ): Promise<Response> {
   try {
     const userId = req.userId;
+    const cacheKey = getCacheKey("semesters", userId);
+
+    // Tenta buscar do cache primeiro
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Se não estiver em cache, busca do banco
     const semesters = await SemesterGrade.find({ user: userId }).sort({
       year: -1,
       term: -1
     });
+
+    // Salva no cache
+    await setCache(cacheKey, semesters);
+
     return res.json(semesters);
   } catch (error) {
     console.error("Erro ao listar semestres:", error);
@@ -74,6 +88,9 @@ export async function createSemester(
       approved
     });
 
+    // Invalida o cache de semestres do usuário
+    await deleteCachePattern(`semesters:${userId}*`);
+
     return res.status(201).json(semester);
   } catch (error) {
     console.error("Erro ao criar semestre:", error);
@@ -132,6 +149,9 @@ export async function updateSemester(
 
     await semester.save();
 
+    // Invalida o cache de semestres do usuário
+    await deleteCachePattern(`semesters:${userId}*`);
+
     return res.json(semester);
   } catch (error) {
     console.error("Erro ao atualizar semestre:", error);
@@ -155,6 +175,9 @@ export async function deleteSemester(
     if (!semester) {
       return res.status(404).json({ message: "Semestre não encontrado" });
     }
+
+    // Invalida o cache de semestres do usuário
+    await deleteCachePattern(`semesters:${userId}*`);
 
     return res.json({ message: "Semestre removido com sucesso" });
   } catch (error) {

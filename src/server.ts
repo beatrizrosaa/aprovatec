@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { connectDatabase } from "./database";
+import { connectRedis } from "./database/redis";
 import authRoutes from "./routes/authRoutes";
 import gradeRoutes from "./routes/gradeRoutes";
 
@@ -19,8 +20,13 @@ app.use("/grades", gradeRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-connectDatabase().then(() => {
+async function startServer() {
+  await connectDatabase();
+  await connectRedis();
+  
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
   });
-});
+}
+
+startServer();

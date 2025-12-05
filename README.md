@@ -28,12 +28,14 @@ npm install
 MONGO_URI=mongodb://localhost:27017/aprovatec
 JWT_SECRET=seu_secret_jwt_aqui
 PORT=3000
+REDIS_URL=redis://localhost:6379
 ```
 
 **Nota:** 
 - `MONGO_URI`: URL de conexão com o MongoDB (obrigatório)
 - `JWT_SECRET`: Chave secreta para assinatura dos tokens JWT (obrigatório)
 - `PORT`: Porta em que o servidor irá rodar (opcional, padrão: 3000)
+- `REDIS_URL`: URL de conexão com o Redis (opcional, se não fornecido o cache será desabilitado)
 
 ## Como Executar
 
@@ -72,11 +74,11 @@ npm start
 ```
 src/
 ├── controllers/     # Controladores das rotas
-├── database/       # Configuração do banco de dados
+├── database/       # Configuração do banco de dados (MongoDB e Redis)
 ├── middlewares/    # Middlewares (autenticação, etc.)
 ├── models/         # Modelos do MongoDB/Mongoose
 ├── routes/         # Definição das rotas
-├── services/       # Lógica de negócio
+├── services/       # Lógica de negócio (incluindo cache)
 └── server.ts       # Arquivo principal do servidor
 ```
 
@@ -91,8 +93,28 @@ src/
 - TypeScript
 - Express.js
 - MongoDB (Mongoose)
+- Redis (Cache)
 - JWT (JSON Web Tokens)
 - bcryptjs
 - CORS
 - dotenv
+
+## Cache com Redis
+
+A aplicação utiliza Redis para cache de dados, melhorando a performance das consultas. Atualmente, o endpoint `GET /grades` utiliza cache para armazenar a lista de semestres de cada usuário por 5 minutos.
+
+### Configuração do Redis
+
+Para desenvolvimento local, você pode usar:
+- Redis local: `redis://localhost:6379`
+- Docker: `docker run -d -p 6379:6379 redis:alpine`
+
+Para produção no Vercel, recomenda-se usar serviços compatíveis com Redis:
+- **Upstash Redis** (recomendado para Vercel): https://upstash.com/
+- **Redis Cloud**: https://redis.com/cloud/
+- **AWS ElastiCache**: https://aws.amazon.com/elasticache/
+
+Após criar a instância, adicione a URL de conexão na variável de ambiente `REDIS_URL` no Vercel.
+
+**Nota:** Se a variável `REDIS_URL` não estiver configurada, a aplicação funcionará normalmente sem cache.
 
